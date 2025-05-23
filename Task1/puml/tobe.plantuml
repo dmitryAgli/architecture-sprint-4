@@ -1,0 +1,79 @@
+@startuml
+
+!include <C4/C4_Container>
+
+LAYOUT_TOP_DOWN()
+LAYOUT_WITH_LEGEND()
+
+Person(customer, "Customer", "Физическое лицо, которое заказывает товары онлайн")
+Person(operator, "Operator", "Оператор, который выполняет заказы")
+Person(seller, "Seller", "Менеджер, который обрабатывает заказы и отвечает на вопросы клиентов")
+
+System_Ext(ext_seller, "External Sellers", "Внешние сервисы, которые размещают заявки на расчет стоимости заказа")
+
+System_Ext(s3, "S3 Cloud Storage", "Сохраняет данные о 3-d модели изделия")
+
+System_Boundary(system, "Jewerly Store System") {
+
+    ' Online-Shop
+
+    Container(gtw, "API Gateway", "Java, Spring Cloud", "Маршрутизация, Аутентификация, Лимитирование запросов, Балансировка нагрузки")
+    
+    Container(shop_ui, "Internet Shop", "Vue, TypeScript, Threejs ", "Веб-интерфейс для взаимодействия с пользователем")
+    
+    Container(shop_api, "SHOP API", "Java, Spring Boot", "Реализует бизнес-логику онлайн магазина")
+
+    Container(shop_db, "SHOP DB", "PostgreSQL", "Сохраняет данные о товарах и покупателях")
+
+    ' CRM
+
+    Container(crm_ui, "CRM", "Vue, TypeScript, Threejs ", "Веб-интерфейс для взаимодействия с пользователем")
+    
+    Container(crm_api, "CRM API", "Java, Spring Boot", "Реализует бизнес-логику работы с клиентами")
+
+    Container(crm_db, "CRM DB", "PostgreSQL", "Сохраняет данные о работе с заказами клиентов")
+
+    ' MES
+
+    Container(mes_ui, "MES", "Vue, TypeScript, Threejs ", "Веб-интерфейс для взаимодействия с пользователем")
+
+    Container(mes_api, "MES API", "Java, Spring Boot", "Реализует бизнес-логику изготовления заказа")
+    
+    Container(mes_calculator, "MES Calculator", "C#,.NET Core", "Реализует математический алгоритм расчета стоимости заказа")
+
+    Container(mes_db, "MES DB", "PostgreSQL", "Сохраняет данные об изготовлении заказов клиентов")
+
+    Container(mes_redis, "MES Cache", "Redis", "Сохраняет данные о статусах изготовления заказов")
+
+    ' Data Bus
+
+    Container(bus, "Event Bus", "Apache Kafka", "Обмен событиями между компонентами системы")
+
+}
+
+Rel(customer, shop_ui, "")
+Rel(shop_ui, gtw, "")
+Rel(gtw, shop_api, "")
+Rel(shop_api, shop_db, "")
+
+Rel(seller, crm_ui, "")
+Rel(crm_ui, gtw, "")
+Rel(gtw, crm_api, "")
+Rel(crm_api, crm_db, "")
+
+Rel(operator, mes_ui, "")
+Rel(mes_ui, gtw, "")
+Rel(gtw, mes_api, "")
+Rel(mes_api, mes_calculator, "[REST]")
+Rel(s3, mes_calculator, "[Download]")
+Rel(mes_api, mes_db, "")
+Rel(mes_api, mes_redis, "")
+
+Rel(shop_api, s3, "Upload 3D model")
+Rel(ext_seller, gtw, "")
+
+Rel(shop_api, bus, "INITIATED, FILE_UPLOADED, SUBMITTED")
+Rel(crm_api, bus, "MANUFACTURING_APPROVED, CLOSED")
+Rel(mes_api, bus, "PRICE_CALCULATED, MANUFACTURING_STARTED, MANUFACTURING_COMPLETED, PACKAGING, SHIPPED")
+
+@enduml
