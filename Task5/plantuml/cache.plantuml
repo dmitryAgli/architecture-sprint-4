@@ -1,0 +1,35 @@
+@startuml
+
+
+actor "User" as operator
+participant "MES UI" as mes_ui
+participant "MES API" as mes_api
+database "Cache" as cache
+database "MES DB" as mes_db
+
+== Read Cache ==
+
+operator -> mes_ui: Просмотреть данные по заказам
+mes_ui -> mes_api: GET /orders
+mes_api -> cache: read data from cache
+alt data exists in cache
+    cache --> mes_api: return data from cache
+else data does not exist in cache
+    mes_api -> mes_db: read data from MES DB
+    mes_db --> mes_api: return data from MES DB
+    mes_api --> cache: write data to cache
+end
+mes_api --> mes_ui: response
+mes_ui -> operator: Отобразить данные по заказам
+
+== Write Cache ==
+
+operator -> mes_ui: Взять заказ в работу
+mes_ui -> mes_api: PUT /orders/{id}/start
+mes_api -> mes_db: update order status in MES DB
+mes_api <- mes_db: successful update
+mes_api -> cache: write data to cache
+mes_api --> mes_ui: response
+mes_ui -> operator: Отобразить результат выполнения запроса
+
+@enduml
